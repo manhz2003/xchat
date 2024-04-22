@@ -1,19 +1,24 @@
 const express = require("express");
-const webRoutes = require("./routes/api");
+const cors = require("cors");
 require("dotenv").config();
-const connectDatabase = require("./config/database");
+const initRoutes = require("./routes/index");
+const { authenticateToken, authorizeRole } = require("./middleware/auth");
+const bodyParser = require("body-parser");
 
 const app = express();
+
+app.use(bodyParser.json());
+
+app.use(cors());
+
+initRoutes(app);
+
+app.get("/protected", authenticateToken, (req, res) => {});
+
+app.get("/admin", authenticateToken, authorizeRole("admin"), (req, res) => {});
+
 const port = process.env.PORT || 8888;
 const hostname = process.env.HOST_NAME;
-
-// app.use("/", webRoutes);
-
-connectDatabase();
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
 
 app.listen(port, hostname, () => {
   console.log(`Example app listening on port ${port}`);

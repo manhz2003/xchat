@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import logo from "../../assets/images/vite-removebg-preview.png";
 import icons from "../../ultils/icons";
 import { Link, useNavigate } from "react-router-dom";
+import { apiRegister } from "../../apis/user";
 
 const { FaGoogle } = icons;
 
 const Register = () => {
+  const navigate = useNavigate();
+  const [fullname, setFullname] = useState("");
+  const [emailExistsError, setEmailExistsError] = useState(false);
+  const [fullnameEmptyError, setFullnameEmptyError] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState(false);
   const [emailEmptyError, setEmailEmptyError] = useState(false);
@@ -20,9 +23,14 @@ const Register = () => {
   const [repasswordEmptyError, setRepasswordEmptyError] = useState(false);
   const [passwordMismatchError, setPasswordMismatchError] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const emailRegex = /^[a-zA-Z0-9]+@gmail\.com$/;
+    if (!fullname) {
+      setFullnameEmptyError(true);
+    } else {
+      setFullnameEmptyError(false);
+    }
     if (!email) {
       setEmailEmptyError(true);
       setEmailError(false);
@@ -50,6 +58,32 @@ const Register = () => {
       setPasswordMismatchError(true);
     } else {
       setPasswordMismatchError(false);
+    }
+    if (
+      !emailError &&
+      !emailEmptyError &&
+      !passwordEmptyError &&
+      !repasswordEmptyError &&
+      !passwordMismatchError &&
+      !passwordMismatchError
+    ) {
+      try {
+        const response = await apiRegister({ fullname, email, password });
+        if (response.status === 200) {
+          const confirm = window.confirm(
+            "Đăng ký thành công. Bạn có muốn chuyển đến trang đăng nhập?"
+          );
+          if (confirm) {
+            navigate("/login");
+          }
+        } else if (response.status === 400) {
+          setEmailExistsError(true);
+        } else {
+          console.error(response.message);
+        }
+      } catch (error) {
+        console.error("An error occurred while registering:", error);
+      }
     }
   };
 
@@ -79,13 +113,36 @@ const Register = () => {
                   }}
                 >
                   <TextField
-                    error={emailError || emailEmptyError}
+                    error={fullnameEmptyError}
+                    fullWidth
+                    label={
+                      fullnameEmptyError
+                        ? "Full Name không được bỏ trống"
+                        : "Full Name"
+                    }
+                    id="fullname"
+                    value={fullname}
+                    onChange={(e) => setFullname(e.target.value)}
+                  />
+                </Box>
+              </div>
+              <div className="relative mb-6" data-twe-input-wrapper-init>
+                <Box
+                  sx={{
+                    width: 500,
+                    maxWidth: "100%",
+                  }}
+                >
+                  <TextField
+                    error={emailError || emailEmptyError || emailExistsError}
                     fullWidth
                     label={
                       emailEmptyError
                         ? "Email không được bỏ trống"
                         : emailError
                         ? "Email không đúng định dạng"
+                        : emailExistsError
+                        ? "Email đã tồn tại"
                         : "Email address"
                     }
                     id="fullWidth"

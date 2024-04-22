@@ -43,7 +43,10 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
 
   const handleLogout = (event) => {
     if (!window.confirm("Bạn có chắc chắn muốn thoát không?")) {
-      event.preventDefault();
+    } else {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      toast.success("Đăng xuất thành công");
     }
   };
 

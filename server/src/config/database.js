@@ -1,31 +1,27 @@
-const { Sequelize } = require("sequelize");
+const mysql = require("mysql2/promise");
 require("dotenv").config();
 
-// Set up a connection to the database
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: "mysql",
-    pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-  }
-);
+// Tạo một đối tượng Pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-const connectDatabase = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log("Kết nối database thành công.");
-  } catch (error) {
-    console.error("Unable to connect to the database:", error);
-  }
-};
+// Kiểm tra kết nối thông qua promise
+pool
+  .getConnection()
+  .then((connection) => {
+    connection.release(); // release the connection back to the pool
+    console.log("Connect DB Success");
+  })
+  .catch((err) => {
+    console.error("Connect DB Error", err);
+  });
 
-module.exports = connectDatabase;
+// Export pool
+module.exports = { pool };

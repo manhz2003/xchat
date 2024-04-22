@@ -8,8 +8,10 @@ import logo from "../../assets/images/vite-removebg-preview.png";
 import { Link, useNavigate } from "react-router-dom";
 import icons from "../../ultils/icons";
 const { FaGoogle } = icons;
+import { apiLogin } from "../../apis/user";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState(false);
@@ -17,7 +19,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [passwordEmptyError, setPasswordEmptyError] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const emailRegex = /^[a-zA-Z0-9]+@gmail\.com$/;
@@ -35,6 +37,25 @@ const Login = () => {
       setPasswordEmptyError(true);
     } else {
       setPasswordEmptyError(false);
+    }
+
+    if (!emailError && !emailEmptyError && !passwordEmptyError) {
+      try {
+        const response = await apiLogin({ email, password });
+        if (response.status === 200) {
+          localStorage.setItem("accessToken", response.data.accessToken);
+          if (isChecked) {
+            document.cookie = `refreshToken=${
+              response.data.refreshToken
+            }; max-age=${60 * 60 * 24 * 30}; path=/;`;
+          }
+          navigate("/chat");
+        } else if (response.status === 400) {
+          alert("Email hoặc mật khẩu không chính xác");
+        }
+      } catch (error) {
+        console.error("An error occurred while logging in:", error);
+      }
     }
   };
 
@@ -87,6 +108,7 @@ const Login = () => {
                   }}
                 >
                   <TextField
+                    type="password"
                     error={passwordEmptyError}
                     fullWidth
                     label={
