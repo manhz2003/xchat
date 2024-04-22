@@ -22,12 +22,10 @@ const sequelize = new Sequelize(
 const connectDatabase = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Connection has been established successfully.");
+    console.log("Kết nối database thành công.");
   } catch (error) {
     console.error("Unable to connect to the database:", error);
   }
 };
 
-connectDatabase();
-
-module.exports = sequelize;
+module.exports = connectDatabase;

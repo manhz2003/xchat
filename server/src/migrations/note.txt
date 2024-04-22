@@ -1,0 +1,6 @@
+Để tạo các bảng csdl migraion cần thực hiện:
+
+- từ thư mục gốc server -> di chuyển vào thư mục src
+- thực hiện lệnh npx sequelize-cli db:migrate
+
+- lưu ý cần sửa các thông tin database trong file .ENV và server/src/config/config.json

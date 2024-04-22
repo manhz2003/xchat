@@ -1,33 +1,23 @@
-// models/user.js
+// models/userRole.js
 const { DataTypes, Model } = require("sequelize");
 const sequelize = require("../config/database");
 
-class User extends Model {}
+class UserRole extends Model {}
 
-User.init(
+UserRole.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    fullname: {
-      type: DataTypes.STRING,
+    user_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
-    email: {
-      type: DataTypes.STRING,
+    role_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    avatar: {
-      type: DataTypes.STRING,
-    },
-    refresh_token: {
-      type: DataTypes.STRING,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -40,10 +30,10 @@ User.init(
   },
   {
     sequelize,
-    modelName: "User",
-    tableName: "Users",
+    modelName: "UserRole",
+    tableName: "UserRoles",
     timestamps: false,
   }
 );
 
-module.exports = User;
+module.exports = UserRole;
