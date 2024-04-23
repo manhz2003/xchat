@@ -5,10 +5,10 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import Modal from "react-modal";
 import Button from "@mui/material/Button";
-import ButtonFile from "@mui/joy/Button";
 
-import SvgIcon from "@mui/joy/SvgIcon";
+import { apiLogOut, getAvartarUser, apiUpdateAvatar } from "../../apis/user";
 import { styled } from "@mui/joy";
+import { set } from "lodash";
 
 const {
   FaRegUser,
@@ -17,14 +17,16 @@ const {
   CiSettings,
   MdOutlineLockReset,
   IoIosCloseCircleOutline,
-  IoCloudUploadOutline,
   MdCancel,
   CiSaveDown1,
+  RxAvatar,
 } = icons;
 
 const BarControl = ({ activeIcon, setActiveIcon }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [avatar, setAvatar] = useState("");
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -41,38 +43,68 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
     }
   }, [location.pathname]);
 
-  const handleLogout = (event) => {
+  const userId = localStorage.getItem("userId");
+
+  const handleLogout = async (event) => {
     if (!window.confirm("Bạn có chắc chắn muốn thoát không?")) {
-    } else {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      toast.success("Đăng xuất thành công");
+      return;
+    }
+
+    try {
+      const response = await apiLogOut({ userId });
+
+      if (response.status === 200) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userId");
+        toast.success("Đăng xuất thành công");
+      } else {
+        console.error("An error occurred while logging out:", response);
+      }
+    } catch (error) {
+      console.error("An error occurred while logging out:", error);
     }
   };
 
-  const VisuallyHiddenInput = styled("input")`
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    white-space: nowrap;
-    width: 1px;
-  `;
-
-  const [uploadedImage, setUploadedImage] = useState(avatar);
-
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      setUploadedImage(reader.result);
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (userId) {
+        try {
+          const response = await getAvartarUser(userId);
+          if (response.status === 200) {
+            setAvatar(response.data);
+          } else {
+            console.error(
+              "An error occurred while fetching the avatar:",
+              response
+            );
+          }
+        } catch (error) {
+          console.error("An error occurred while fetching the avatar:", error);
+        }
+      }
     };
 
-    reader.readAsDataURL(file);
+    fetchAvatar();
+  }, []);
+
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [checkUrl, setCheckUrl] = useState(false);
+
+  const updateAvatar = async () => {
+    if (checkUrl === false) {
+      alert("Url không hợp lệ");
+    }
+
+    const response = await apiUpdateAvatar({ userId, avatarUrl });
+
+    if (response.status === 200) {
+      alert("Cập nhật avatar thành công");
+      setIsModalOpen(false);
+      window.location.reload();
+    } else if (response.status === 400) {
+      console.log("lỗi khi cập nhật");
+    }
   };
 
   return (
@@ -84,7 +116,7 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
         >
           <img
             className="rounded-[50%] h-[68px] w-[68px]"
-            src={avatar}
+            src={avatar.avatar}
             alt=""
           />
         </div>
@@ -92,13 +124,14 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
         <Modal
           isOpen={isModalOpen}
           onRequestClose={closeModal}
+          ariaHideApp={false}
           style={{
             overlay: {
               backgroundColor: "rgba(0, 0, 0, 0.75)",
             },
             content: {
               width: "700px",
-              height: "450px",
+              height: "550px",
               position: "absolute",
               top: "50%",
               left: "50%",
@@ -111,28 +144,40 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
             <IoIosCloseCircleOutline size="30px" />
           </button>
 
+          <div className="p-3 pl-3 pb-[50px] py-[20px]">
+            Xin chào ! {avatar.fullname}, bạn có muốn cập nhật avatar không ?
+          </div>
+
           <div className="flex justify-center">
             <div className="rounded-[50%] bg-[#363e47] cursor-pointer h-[200px] w-[200px] mt-3">
               <img
                 className="rounded-[50%] h-[200px] w-[200px]"
-                src={uploadedImage}
+                src={avatar.avatar}
                 alt=""
               />
             </div>
           </div>
 
-          <div className="mt-[50px] flex justify-center">
-            <ButtonFile
-              component="label"
-              role={undefined}
-              tabIndex={-1}
-              variant="outlined"
-              color="neutral"
-              startDecorator={<IoCloudUploadOutline size="24px" />}
-            >
-              Upload a file
-              <VisuallyHiddenInput type="file" onChange={handleImageUpload} />
-            </ButtonFile>
+          <div className="mt-[44px] flex justify-center ">
+            <div className="relative w-full flex justify-center">
+              <input
+                className="border-none outline-none w-[90%] p-3 rounded-[6px] pl-[50px]"
+                placeholder="Nhập url images để cập nhật avatar của bạn"
+                type="text"
+                name=""
+                id=""
+                value={avatarUrl}
+                onChange={(e) => {
+                  if (e.target.value !== "") {
+                    setCheckUrl(true);
+                    setAvatarUrl(e.target.value);
+                  }
+                }}
+              />
+              <div className="absolute left-[44px] top-[11px]">
+                <RxAvatar size="26px" />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-5 mt-[30px]">
@@ -149,6 +194,7 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
               Cancel
             </Button>
             <Button
+              onClick={updateAvatar}
               style={{
                 width: "100%",
                 background: "#43515a",

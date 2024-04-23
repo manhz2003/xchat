@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import "./styles/App.css";
-import {
-  Login,
-  Register,
-  ForgotPassWord,
-  ResetPassWord,
-  VerifyEmail,
-} from "./pages/Auth/";
+import { Login, Register, ForgotPassWord, ResetPassWord } from "./pages/Auth/";
 import { NotFound } from "./components";
 import { DashBoard } from "./pages/Admin";
 import { Chat } from "./pages/Client";
@@ -45,7 +39,6 @@ function App() {
         <Route path={path.LOGIN} element={<Login />} />
         <Route path={path.FORGOT_PASSWORD} element={<ForgotPassWord />} />
         <Route path={path.RESET_PASSWORD} element={<ResetPassWord />} />
-        <Route path={path.VERIFY_EMAIL} element={<VerifyEmail />} />
         <Route
           path={path.DASHBOARD}
           element={

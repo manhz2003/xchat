@@ -16,6 +16,7 @@ import { FaPhoneAlt } from "react-icons/fa";
 import { FaVideo } from "react-icons/fa";
 import { MdManageAccounts } from "react-icons/md";
 import { MdDelete } from "react-icons/md";
+import { RxAvatar } from "react-icons/rx";
 
 const icons = {
   FaGoogle,
@@ -36,5 +37,6 @@ const icons = {
   FaVideo,
   MdManageAccounts,
   MdDelete,
+  RxAvatar,
 };
 export default icons;

@@ -23,7 +23,12 @@ module.exports = {
         allowNull: false,
       },
       avatar: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
+      },
+      status: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
       },
       refresh_token: {
         type: Sequelize.STRING,

@@ -59,6 +59,17 @@ const UserLogin = {
   },
 };
 
+const logout = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const result = await UserService.logoutUser({ userId });
+
+    return res.status(result.status).json(result);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 const changePassword = async (req, res) => {
   try {
     const { email, oldPassword, newPassword } = req.body;
@@ -86,4 +97,45 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { UserRegister, UserLogin, changePassword };
+const getAllUsers = async (req, res) => {
+  try {
+    const result = await UserService.getAllUsers();
+
+    res.status(result.status).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getUserAvatar = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const result = await UserService.getUserAvatar(userId);
+
+    return res.status(result.status).json(result);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+const updateUserAvatar = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const avatarUrl = req.body.avatarUrl;
+    const result = await UserService.updateUserAvatar(userId, avatarUrl);
+
+    return res.status(result.status).json(result);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = {
+  UserRegister,
+  UserLogin,
+  changePassword,
+  logout,
+  getAllUsers,
+  getUserAvatar,
+  updateUserAvatar,
+};

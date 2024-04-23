@@ -20,3 +20,30 @@ export const apiResetPassWord = (data) =>
     method: "put",
     data,
   });
+
+export const apiLogOut = (data) =>
+  axios({
+    url: "/api/v1/user/logout",
+    method: "post",
+    data,
+  });
+
+export const getUser = (data) =>
+  axios({
+    url: "/api/v1/user/users",
+    method: "get",
+    data,
+  });
+
+export const getAvartarUser = (userId) =>
+  axios({
+    url: `/api/v1/user/avatar-user/${userId}`,
+    method: "get",
+  });
+
+export const apiUpdateAvatar = (data) =>
+  axios({
+    url: "/api/v1/user/avatar-user-update",
+    method: "put",
+    data,
+  });

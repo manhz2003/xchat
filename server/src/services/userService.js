@@ -96,6 +96,10 @@ const loginUser = async ({ email, password }) => {
       };
     }
 
+    await connect.execute("UPDATE Users SET status = ? WHERE id = ?", [
+      1,
+      user.id,
+    ]);
     const accessToken = generateAccessToken({ userId: user.id, email });
     const refreshToken = generateRefreshToken({ userId: user.id, email });
 
@@ -105,6 +109,34 @@ const loginUser = async ({ email, password }) => {
       data: user,
       accessToken,
       refreshToken,
+      userId: user.id,
+    };
+  } catch (err) {
+    if (connect) {
+      connect.release();
+    }
+
+    throw err;
+  }
+};
+
+const logoutUser = async ({ userId }) => {
+  let connect;
+  try {
+    connect = await connection.pool.getConnection();
+    if (!connect) {
+      throw new Error("Connection is undefined or null.");
+    }
+
+    // Update user status to 0
+    await connect.execute("UPDATE Users SET status = ? WHERE id = ?", [
+      false,
+      userId,
+    ]);
+
+    return {
+      status: 200,
+      message: "Đăng xuất thành công",
     };
   } catch (err) {
     if (connect) {
@@ -164,8 +196,93 @@ const changePassword = async ({ email, oldPassword, newPassword }) => {
   }
 };
 
+const getAllUsers = async () => {
+  try {
+    const [users] = await connection.pool.query(
+      "SELECT id, fullname, avatar, status FROM Users"
+    );
+
+    return {
+      status: 200,
+      message: "Lấy danh sách người dùng thành công",
+      data: users,
+    };
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getUserAvatar = async (userId) => {
+  let connect;
+  try {
+    connect = await connection.pool.getConnection();
+    if (!connect) {
+      throw new Error("Connection is undefined or null.");
+    }
+
+    const [users] = await connect.execute(
+      "SELECT avatar, fullname FROM Users WHERE id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return {
+        status: 404,
+        message: "User not found",
+      };
+    }
+
+    const user = users[0];
+
+    return {
+      status: 200,
+      message: "User avatar and fullname retrieved successfully",
+      data: {
+        avatar: user.avatar,
+        fullname: user.fullname,
+      },
+    };
+  } catch (err) {
+    throw err;
+  } finally {
+    if (connect) {
+      connect.release();
+    }
+  }
+};
+
+const updateUserAvatar = async (userId, avatarUrl) => {
+  let connect;
+  try {
+    connect = await connection.pool.getConnection();
+    if (!connect) {
+      throw new Error("Connection is undefined or null.");
+    }
+
+    await connect.execute("UPDATE Users SET avatar = ? WHERE id = ?", [
+      avatarUrl,
+      userId,
+    ]);
+
+    return {
+      status: 200,
+      message: "User avatar updated successfully",
+    };
+  } catch (err) {
+    throw err;
+  } finally {
+    if (connect) {
+      connect.release();
+    }
+  }
+};
+
 module.exports = {
   registerUser,
   changePassword,
   loginUser,
+  logoutUser,
+  getAllUsers,
+  getUserAvatar,
+  updateUserAvatar,
 };

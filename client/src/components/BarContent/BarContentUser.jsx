@@ -1,63 +1,44 @@
-import React, { useState } from "react";
-import avatarTrump from "../../assets/images/trump.jpeg";
-import avatarPutin from "../../assets/images/putin.jpeg";
-import avatarBiden from "../../assets/images/biden.jpeg";
-import avatarZelensky from "../../assets/images/zelensky.jpeg";
+import React, { useState, useEffect } from "react";
 import icons from "../../ultils/icons";
+import { getUser } from "../../apis/user";
 const { IoIosSearch } = icons;
 
 const BarContentUser = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
 
-  const users = [
-    { id: 1, name: "Donald John Trump", avatar: avatarTrump, status: 0 },
-    {
-      id: 2,
-      name: "Vladimir Vladimirovich Putin",
-      avatar: avatarPutin,
-      status: 1,
-    },
-    { id: 3, name: "Joseph Robinette Biden", avatar: avatarBiden, status: 0 },
-    {
-      id: 4,
-      name: "Oleksandrovych Zelensky",
-      avatar: avatarZelensky,
-      status: 1,
-    },
-    { id: 5, name: "Donald John Trump", avatar: avatarTrump, status: 0 },
-    {
-      id: 6,
-      name: "Vladimir Vladimirovich Putin",
-      avatar: avatarPutin,
-      status: 1,
-    },
-    { id: 7, name: "Joseph Robinette Biden", avatar: avatarBiden, status: 0 },
-    {
-      id: 8,
-      name: "Oleksandrovych Zelensky",
-      avatar: avatarZelensky,
-      status: 1,
-    },
-    { id: 9, name: "Donald John Trump", avatar: avatarTrump, status: 0 },
-    {
-      id: 10,
-      name: "Vladimir Vladimirovich Putin",
-      avatar: avatarPutin,
-      status: 1,
-    },
-    { id: 11, name: "Joseph Robinette Biden", avatar: avatarBiden, status: 0 },
-    {
-      id: 12,
-      name: "Oleksandrovych Zelensky",
-      avatar: avatarZelensky,
-      status: 1,
-    },
-  ];
+  const fetchUsers = async (searchTerm) => {
+    try {
+      const response = await getUser(searchTerm);
+      if (response.status === 200) {
+        return response.data;
+      } else {
+        throw new Error("An error occurred while fetching users:", response);
+      }
+    } catch (error) {
+      throw new Error("An error occurred while fetching users:", error);
+    }
+  };
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await fetchUsers(searchTerm);
+        setUsers(data);
+        console.log("Users:", data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadUsers();
+  }, [searchTerm]);
 
   const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.fullname && searchTerm
+      ? user.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+      : true
   );
-
   return (
     <>
       <div className="flex flex-col h-full w-[100%]">
@@ -77,7 +58,7 @@ const BarContentUser = () => {
           <div className="flex flex-col">
             {filteredUsers.map((user) => (
               <div
-                key={user.name}
+                key={user.id}
                 className="flex py-5 cursor-default pl-5 relative"
               >
                 <div className="rounded-[50%] flex items-center">
@@ -86,7 +67,7 @@ const BarContentUser = () => {
                     src={user.avatar}
                     alt=""
                   />
-                  <div className="text-[#d7d3d3] ml-5">{user.name}</div>
+                  <div className="text-[#d7d3d3] ml-5">{user.fullname}</div>
                 </div>
                 <div
                   className={`rounded-[50%] h-[15px] w-[15px] absolute right-5 top-[43%] ${

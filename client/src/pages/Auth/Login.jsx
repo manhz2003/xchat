@@ -22,7 +22,7 @@ const Login = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const emailRegex = /^[a-zA-Z0-9]+@gmail\.com$/;
+    const emailRegex = /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$/;
     if (!email) {
       setEmailEmptyError(true);
       setEmailError(false);
@@ -43,7 +43,9 @@ const Login = () => {
       try {
         const response = await apiLogin({ email, password });
         if (response.status === 200) {
+          console.log(response.data);
           localStorage.setItem("accessToken", response.data.accessToken);
+          localStorage.setItem("userId", response.data.id);
           if (isChecked) {
             document.cookie = `refreshToken=${
               response.data.refreshToken

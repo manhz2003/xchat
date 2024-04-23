@@ -16,6 +16,10 @@
     "@mui/joy": "^5.0.0-beta.32",
     "@mui/material": "^5.15.15",
     "axios": "^1.6.8",
+    "crypto-browserify": "^3.12.0",
+    "inherits": "^2.0.4",
+    "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -24,7 +28,8 @@
     "react-router-dom": "^6.22.3",
     "react-select": "^5.8.0",
     "react-toastify": "^10.0.5",
-    "tw-elements": "^2.0.0"
+    "tw-elements": "^2.0.0",
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
