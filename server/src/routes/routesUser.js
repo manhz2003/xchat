@@ -8,6 +8,7 @@ const {
   getAllUsers,
   getUserAvatar,
   updateUserAvatar,
+  getAllUsersWithLatestMessageController,
 } = require("../controllers/userController");
 
 router.post("/register", UserRegister.registerUser);
@@ -17,5 +18,6 @@ router.post("/logout", logout);
 router.get("/users", getAllUsers);
 router.get("/avatar-user/:id", getUserAvatar);
 router.put("/avatar-user-update", updateUserAvatar);
+router.get("/user-latest-message/:id", getAllUsersWithLatestMessageController);
 
 module.exports = router;

@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 function generateAccessToken(payload) {
-  const secretKey = process.env.JWT_SECRET || "your-secret-key";
+  const secretKey = process.env.ACCESS_TOKEN_SECRET || "secret";
   const token = jwt.sign(payload, secretKey, { expiresIn: "1h" });
   return token;
 }
@@ -277,6 +277,52 @@ const updateUserAvatar = async (userId, avatarUrl) => {
   }
 };
 
+const getAllUsersWithLatestMessage = async (currentUserId) => {
+  if (currentUserId === undefined) {
+    throw new Error("currentUserId must not be undefined");
+  }
+
+  let connect;
+  try {
+    connect = await connection.pool.getConnection();
+    if (!connect) {
+      throw new Error("Connection is undefined or null.");
+    }
+
+    const [users] = await connect.execute(
+      `SELECT Users.id, Users.fullname, Users.avatar, Users.status, Messages.content AS latestMessage
+      FROM Users
+      LEFT JOIN (
+        SELECT content, 
+          CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS user_id
+        FROM Messages
+        WHERE id IN (
+          SELECT MAX(id)
+          FROM Messages
+          WHERE sender_id = ? OR receiver_id = ?
+          GROUP BY CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END
+        )
+      ) Messages ON Users.id = Messages.user_id
+      WHERE Users.id != ?`,
+      [
+        currentUserId,
+        currentUserId,
+        currentUserId,
+        currentUserId,
+        currentUserId,
+      ]
+    );
+
+    return users;
+  } catch (err) {
+    throw err;
+  } finally {
+    if (connect) {
+      connect.release();
+    }
+  }
+};
+
 module.exports = {
   registerUser,
   changePassword,
@@ -285,4 +331,5 @@ module.exports = {
   getAllUsers,
   getUserAvatar,
   updateUserAvatar,
+  getAllUsersWithLatestMessage,
 };

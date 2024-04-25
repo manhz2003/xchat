@@ -47,3 +47,9 @@ export const apiUpdateAvatar = (data) =>
     method: "put",
     data,
   });
+
+export const getAllUsersWithLatestMessage = (userId) =>
+  axios({
+    url: `/api/v1/user/user-latest-message/${userId}`,
+    method: "get",
+  });

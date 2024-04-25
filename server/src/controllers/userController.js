@@ -1,4 +1,4 @@
-const UserService = require("../services/UserService.js");
+const UserService = require("../services/userService.js");
 
 const UserRegister = {
   registerUser: async (req, res) => {
@@ -130,6 +130,22 @@ const updateUserAvatar = async (req, res) => {
   }
 };
 
+const getAllUsersWithLatestMessageController = async (req, res, next) => {
+  try {
+    const currentUserId = req.params.id;
+    const users = await UserService.getAllUsersWithLatestMessage(currentUserId);
+    res.status(200).json({
+      status: "success",
+      data: users,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: err.message,
+    });
+  }
+};
+
 module.exports = {
   UserRegister,
   UserLogin,
@@ -138,4 +154,5 @@ module.exports = {
   getAllUsers,
   getUserAvatar,
   updateUserAvatar,
+  getAllUsersWithLatestMessageController,
 };

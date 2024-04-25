@@ -1,52 +1,35 @@
-import React, { useState } from "react";
-import avatarTrump from "../../assets/images/trump.jpeg";
-import avatarPutin from "../../assets/images/putin.jpeg";
-import avatarBiden from "../../assets/images/biden.jpeg";
-import avatarZelensky from "../../assets/images/zelensky.jpeg";
+import React, { useState, useEffect } from "react";
 import icons from "../../ultils/icons";
 const { IoIosSearch } = icons;
+
+import { getAllUsersWithLatestMessage } from "../../apis/user";
 
 const BarContent = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
 
-  const handleUserClick = (user) => {
-    setSelectedUser(user);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const userId = localStorage.getItem("userId");
+      const response = await getAllUsersWithLatestMessage(userId);
+      if (response.status !== 200) {
+        setUsers(response.data);
+      } else if (response.status === 500) {
+        console.log("lỗi server");
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleUserClick = (id) => {
+    setSelectedUser(id);
+    localStorage.setItem("userIdDetail", id);
   };
 
-  const users = [
-    {
-      id: 1,
-      name: "Donald John Trump",
-      avatar: avatarTrump,
-      status: 0,
-      latestMessage: "xin chào bạn, tôi có thể làm quen với ...",
-    },
-    {
-      id: 2,
-      name: "Vladimir Vladimirovich Putin",
-      avatar: avatarPutin,
-      status: 1,
-      latestMessage: "xin chào bạn, tôi có thể làm quen với ...",
-    },
-    {
-      id: 3,
-      name: "Joseph Robinette Biden",
-      avatar: avatarBiden,
-      status: 0,
-      latestMessage: "xin chào bạn, tôi có thể làm quen với ...",
-    },
-    {
-      id: 4,
-      name: "Oleksandrovych Zelensky",
-      avatar: avatarZelensky,
-      status: 1,
-      latestMessage: "xin chào bạn, tôi có thể làm quen với ...",
-    },
-  ];
-
   const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -57,7 +40,7 @@ const BarContent = () => {
             <input
               className="outline-none border-none p-2 pl-14 rounded-[18px] bg-[#232b31] text-[#fff] w-[90%]"
               type="text"
-              placeholder="Search..."
+              placeholder="Search ..."
               name=""
               id=""
               value={searchTerm}
@@ -68,15 +51,15 @@ const BarContent = () => {
             </div>
           </div>
         </div>
-        <div className="mt-5 overflow-y-auto user-list">
-          <div className="flex flex-col">
+        <div className="mt-5 overflow-y-auto user-list w-full">
+          <div className="flex flex-col w-full">
             {filteredUsers.map((user) => (
               <div
-                key={user.name}
-                className={`flex py-5 cursor-default pl-5 relative transition-all duration-200 ease-in-out ${
-                  selectedUser === user.name ? "bg-[#5b6570]" : ""
+                key={user.id}
+                className={`flex py-5 cursor-default pl-5 relative transition-all duration-200 ease-in-out w-full ${
+                  selectedUser === user.id ? "bg-[#5b6570]" : ""
                 }`}
-                onClick={() => handleUserClick(user.name)}
+                onClick={() => handleUserClick(user.id)}
               >
                 <div className="rounded-[50%] h-[55px] w-[55px]">
                   <img
@@ -86,12 +69,13 @@ const BarContent = () => {
                   />
                 </div>
                 <div className="ml-5">
-                  <div className="text-[#d7d3d3]">{user.name}</div>
+                  <div className="text-[#d7d3d3]">{user.fullname}</div>
                   <div className="text-[#8d8f8d] overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[250px] font-thin">
-                    {user.latestMessage}
+                    {user.latestMessage ||
+                      "Xin chào bạn, chúng ta có thể trò truyện với nhau được không ?"}
                   </div>
                 </div>
-                {selectedUser === user.name ? (
+                {selectedUser === user.id ? (
                   <div className="flex items-center justify-center rounded-[30px] h-[15px] w-[15px] bg-[#232b31] text-[#fff] text-[10px] px-5 py-3 absolute right-3 top-3">
                     Now
                   </div>

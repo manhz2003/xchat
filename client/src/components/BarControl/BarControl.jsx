@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from "react";
 import icons from "../../ultils/icons";
-import avatar from "../../assets/images/avatar.jpeg";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import Modal from "react-modal";
 import Button from "@mui/material/Button";
-
 import { apiLogOut, getAvartarUser, apiUpdateAvatar } from "../../apis/user";
-import { styled } from "@mui/joy";
-import { set } from "lodash";
 
 const {
   FaRegUser,
@@ -57,6 +53,7 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userId");
+        localStorage.removeItem("userIdDetail");
         toast.success("Đăng xuất thành công");
       } else {
         console.error("An error occurred while logging out:", response);
