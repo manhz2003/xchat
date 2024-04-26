@@ -70,6 +70,7 @@ const BarControl = ({ activeIcon, setActiveIcon }) => {
           const response = await getAvartarUser(userId);
           if (response.status === 200) {
             setAvatar(response.data);
+            localStorage.setItem("userAvatar", response.data.avatar);
           } else {
             console.error(
               "An error occurred while fetching the avatar:",

@@ -2,20 +2,48 @@ import React, { useState, useEffect, useRef } from "react";
 import icons from "../../ultils/icons";
 const { IoMdSend, MdInsertEmoticon, MdAttachFile, FaPhoneAlt, FaVideo } = icons;
 import { apiUserDetails, apiChatUser, apiSaveMessage } from "../../apis/chat";
+import io from "socket.io-client";
+import CryptoJS from "crypto-js";
+
+function useLocalStorage(key, defaultValue) {
+  const [value, setValue] = useState(() => {
+    const jsonValue = localStorage.getItem(key);
+    if (jsonValue != null) return JSON.parse(jsonValue);
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    const listener = (e) => {
+      if (e.storageArea === localStorage && e.key === key) {
+        setValue(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener("storage", listener);
+
+    return () => {
+      window.removeEventListener("storage", listener);
+    };
+  }, [key]);
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
 
 const AppContent = () => {
   const [infoUserStatus, setInfoUserStatus] = useState([]);
   const [messageContent, setMessageContent] = useState("");
-
   const [messages, setMessages] = useState([]);
-  const [userIdDetail, setUserIdDetail] = useState(
-    localStorage.getItem("userIdDetail") || ""
-  );
+  const [userIdDetail, setUserIdDetail] = useLocalStorage("userIdDetail", "");
+  const [statusConnect, setStatusConnect] = useState(true);
+  const [newMessage, setNewMessage] = useState(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentUserIdDetail = localStorage.getItem("userIdDetail");
-      if (currentUserIdDetail !== userIdDetail) {
+      const currentUserIdDetail = Number(localStorage.getItem("userIdDetail"));
+      if (currentUserIdDetail !== Number(userIdDetail)) {
         setUserIdDetail(currentUserIdDetail);
       }
     }, 0);
@@ -23,6 +51,7 @@ const AppContent = () => {
     return () => clearInterval(interval);
   }, [userIdDetail]);
 
+  // gọi api lấy thông tin user
   useEffect(() => {
     const fetchMessages = async () => {
       const otherUserId = userIdDetail;
@@ -37,33 +66,59 @@ const AppContent = () => {
     fetchMessages();
   }, [userIdDetail]);
 
+  // gọi api lấy tin nhắn
   useEffect(() => {
     const fetchMessages = async () => {
       const currentUserId = localStorage.getItem("userId");
       const otherUserId = localStorage.getItem("userIdDetail");
+      const secretKey = import.meta.env.VITE_ENCRYPTION_KEY_PRO;
       const response = await apiChatUser({
         currentUserId,
         otherUserId,
       });
 
       if (response.status === 200) {
-        console.log(response);
-        setMessages(response.data);
+        // giải mã tin nhắn khi gọi api lấy tin nhắn
+        const decryptedMessages = response.data.map((message) => {
+          try {
+            const decrypted = CryptoJS.DES.decrypt(
+              message.sender.content,
+              secretKey
+            );
+            const originalMessage = decrypted.toString(CryptoJS.enc.Utf8);
+
+            return {
+              ...message,
+              sender: {
+                ...message.sender,
+                content: originalMessage,
+              },
+            };
+          } catch (error) {
+            console.error("Error decrypting message:", error);
+            return message;
+          }
+        });
+
+        setStatusConnect(true);
+        setMessages(decryptedMessages);
       } else if (response.status === 404) {
+        setStatusConnect(false);
         console.log("No messages found");
       }
     };
 
     fetchMessages();
-  }, []);
+  }, [userIdDetail]);
 
+  // cuôn xuống cuối cùng khi có tin nhắn mới
   const messagesContainerRef = useRef(null);
-
   useEffect(() => {
     const messagesContainer = messagesContainerRef.current;
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }, [messages]);
 
+  // chia tin nhắn thành các dòng
   const splitIntoLines = (str, maxWordsPerLine) => {
     if (!str) {
       return [];
@@ -89,13 +144,57 @@ const AppContent = () => {
     return lines;
   };
 
+  // kết nối socket, nhận tin nhắn từ socket server
+  const socketRef = useRef();
+
+  useEffect(() => {
+    socketRef.current = io.connect("http://localhost:8888");
+    socketRef.current.on("message", (message) => {
+      setMessages((prevMessages) => {
+        if (
+          JSON.stringify(prevMessages[prevMessages.length - 1]) !==
+          JSON.stringify(message)
+        ) {
+          return [...prevMessages, message];
+        }
+        return [...prevMessages, message];
+      });
+    });
+
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, [userIdDetail]);
+
+  // gửi tin nhắn tới socket server
   const handleSend = async () => {
     if (messageContent.trim() !== "") {
+      const senderId = localStorage.getItem("userId");
+      const receiverId = localStorage.getItem("userIdDetail");
+      const userAvatar = localStorage.getItem("userAvatar");
+
+      // mã hoá tin nhắn trước khi gửi
+      const secretKey = import.meta.env.VITE_ENCRYPTION_KEY;
+      const content = CryptoJS.DES.encrypt(
+        messageContent,
+        secretKey
+      ).toString();
+      const created_at = new Date().toISOString();
+
       const data = {
-        senderId: localStorage.getItem("userId"),
-        receiverId: localStorage.getItem("userIdDetail"),
-        content: messageContent,
+        senderId,
+        receiverId,
+        content,
+        sender: {
+          id: senderId,
+          content,
+          avatar: userAvatar,
+          created_at,
+        },
       };
+
+      socketRef.current.emit("message", data);
+
       const response = await apiSaveMessage(data);
       if (response.status === 200) {
         console.log("Message sent successfully");
@@ -141,59 +240,68 @@ const AppContent = () => {
             ref={messagesContainerRef}
             className="bg-[#f2f7f7] h-[520px] overflow-y-auto flex flex-col "
           >
-            {messages.map((message, index) => {
-              const lines = splitIntoLines(message.sender.content, 10);
-              const storedUserId = localStorage.getItem("userId");
+            {/* giải mã tin nhắn nhận từ socket trước khi hiển thị lên màn hình */}
+            {statusConnect &&
+              messages.map((message, index) => {
+                const secretKey = import.meta.env.VITE_ENCRYPTION_KEY;
+                const bytes = CryptoJS.DES.decrypt(
+                  message.sender.content,
+                  secretKey
+                );
 
-              return (
-                <div
-                  key={index}
-                  className={`flex gap-3 ${
-                    String(message.sender.id) === String(storedUserId)
-                      ? "justify-end mr-6"
-                      : "justify-start ml-6"
-                  }`}
-                >
-                  {String(message.sender.id) !== String(storedUserId) && (
-                    <div className="my-6 rounded-[50%] bg-[#363e47] h-[48px] w-[48px] flex items-center justify-center cursor-pointer">
-                      <img
-                        className="rounded-[50%] h-[48px] w-[48px]"
-                        src={message.sender.avatar}
-                        alt=""
-                      />
+                const originalMessage = bytes.toString(CryptoJS.enc.Utf8);
+                const lines = splitIntoLines(originalMessage, 10);
+                const storedUserId = localStorage.getItem("userId");
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex gap-3 ${
+                      String(message.sender.id) === String(storedUserId)
+                        ? "justify-end mr-6"
+                        : "justify-start ml-6"
+                    }`}
+                  >
+                    {String(message.sender.id) !== String(storedUserId) && (
+                      <div className="my-6 rounded-[50%] bg-[#363e47] h-[48px] w-[48px] flex items-center justify-center cursor-pointer">
+                        <img
+                          className="rounded-[50%] h-[48px] w-[48px]"
+                          src={message.sender.avatar}
+                          alt=""
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <div
+                        className={`font-light text-[16px] p-6 mt-5 ${
+                          String(message.sender.id) === String(storedUserId)
+                            ? "bg-[#53d38a] text-[white] rounded-b-lg-custom-b"
+                            : "bg-[#fff] rounded-b-lg-custom"
+                        }`}
+                      >
+                        {lines.map((line, index) => (
+                          <React.Fragment key={index}>
+                            {line}
+                            <br />
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-2 ml-4 text-[10px]">
+                        {new Date(message.sender.created_at).toLocaleString()}
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <div
-                      className={`font-light text-[16px] p-6 mt-5 ${
-                        String(message.sender.id) === String(storedUserId)
-                          ? "bg-[#53d38a] text-[white] rounded-b-lg-custom-b"
-                          : "bg-[#fff] rounded-b-lg-custom"
-                      }`}
-                    >
-                      {lines.map((line, index) => (
-                        <React.Fragment key={index}>
-                          {line}
-                          <br />
-                        </React.Fragment>
-                      ))}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2 ml-4 text-[10px]">
-                      {new Date(message.sender.created_at).toLocaleString()}
-                    </div>
+                    {String(message.sender.id) === String(storedUserId) && (
+                      <div className="my-6 rounded-[50%] bg-[#363e47] h-[48px] w-[48px] flex items-center justify-center cursor-pointer">
+                        <img
+                          className="rounded-[50%] h-[48px] w-[48px]"
+                          src={message.sender.avatar}
+                          alt=""
+                        />
+                      </div>
+                    )}
                   </div>
-                  {String(message.sender.id) === String(storedUserId) && (
-                    <div className="my-6 rounded-[50%] bg-[#363e47] h-[48px] w-[48px] flex items-center justify-center cursor-pointer">
-                      <img
-                        className="rounded-[50%] h-[48px] w-[48px]"
-                        src={message.sender.avatar}
-                        alt=""
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
 

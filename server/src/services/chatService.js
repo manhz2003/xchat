@@ -1,4 +1,5 @@
 const connection = require("../config/database");
+const CryptoJS = require("crypto-js");
 
 const getMessagesBetweenUsers = async (currentUserId, otherUserId) => {
   let connect;
@@ -36,6 +37,7 @@ const getMessagesBetweenUsers = async (currentUserId, otherUserId) => {
           content: message.content,
           created_at: message.created_at,
         },
+        receiverId: message.receiver_id,
       };
     });
 
@@ -96,9 +98,13 @@ const saveMessage = async ({ senderId, receiverId, content }) => {
       throw new Error("Connection is undefined or null.");
     }
 
+    // mã hoá tin nhắn trước khi lưu vào database
+    const key = process.env.ENCRYPTION_KEY_PRO;
+    const encryptedContent = CryptoJS.DES.encrypt(content, key).toString();
+
     const [result] = await connect.execute(
       `INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)`,
-      [senderId, receiverId, content]
+      [senderId, receiverId, encryptedContent]
     );
 
     return {

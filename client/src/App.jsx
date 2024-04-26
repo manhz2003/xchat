@@ -11,7 +11,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 import path from "./ultils/path";
-import icons from "./ultils/icons";
 
 const isAuthenticated = () => {
   const token = localStorage.getItem("accessToken");
@@ -56,7 +55,6 @@ function App() {
           }
         />
         <Route path="*" element={<NotFound />} />{" "}
-        {/* Route mới cho trang NotFound */}
       </Routes>
     </Router>
   );
