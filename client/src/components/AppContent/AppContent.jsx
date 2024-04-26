@@ -148,29 +148,42 @@ const AppContent = () => {
   const socketRef = useRef();
 
   useEffect(() => {
+    // Tạo một kết nối socket duy nhất khi component mount
     socketRef.current = io.connect("http://localhost:8888");
+
+    // Gửi sự kiện "user_connected" khi một người dùng kết nối
+    const userId = localStorage.getItem("userId");
+    socketRef.current.emit("user_connected", userId);
+
     socketRef.current.on("message", (message) => {
       setMessages((prevMessages) => {
         if (
-          JSON.stringify(prevMessages[prevMessages.length - 1]) !==
-          JSON.stringify(message)
+          !prevMessages.some(
+            (prevMessage) =>
+              JSON.stringify(prevMessage) === JSON.stringify(message)
+          )
         ) {
           return [...prevMessages, message];
         }
-        return [...prevMessages, message];
+        return prevMessages;
       });
     });
 
+    // Đóng kết nối khi component unmount
     return () => {
       socketRef.current.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    setMessages([]);
   }, [userIdDetail]);
 
   // gửi tin nhắn tới socket server
   const handleSend = async () => {
     if (messageContent.trim() !== "") {
       const senderId = localStorage.getItem("userId");
-      const receiverId = localStorage.getItem("userIdDetail");
+      const receiverId = userIdDetail;
       const userAvatar = localStorage.getItem("userAvatar");
 
       // mã hoá tin nhắn trước khi gửi
@@ -199,6 +212,7 @@ const AppContent = () => {
       if (response.status === 200) {
         console.log("Message sent successfully");
         setMessageContent("");
+        setStatusConnect(true);
       } else {
         console.error("An error occurred while sending the message");
       }

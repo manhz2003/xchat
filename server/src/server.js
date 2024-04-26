@@ -27,19 +27,20 @@ app.use(
 
 initRoutes(app);
 
-app.get("/protected", authenticateToken, (req, res) => {});
-app.get("/admin", authenticateToken, authorizeRole("admin"), (req, res) => {});
+const users = {};
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
-
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
+  socket.on("user_connected", (userId) => {
+    users[userId] = socket.id;
   });
 
-  socket.on("message", (msg) => {
-    console.log("message: ", msg);
-    io.emit("message", msg);
+  socket.on("message", (data) => {
+    const { senderId, receiverId } = data;
+    console.log(senderId, receiverId);
+    // Gửi sự kiện tới người gửi
+    io.to(users[senderId]).emit("message", data);
+    // Gửi sự kiện tới người nhận
+    io.to(users[receiverId]).emit("message", data);
   });
 });
 
