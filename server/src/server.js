@@ -36,11 +36,13 @@ io.on("connection", (socket) => {
 
   socket.on("message", (data) => {
     const { senderId, receiverId } = data;
-    console.log(senderId, receiverId);
+    // console.log(senderId, receiverId);
     // Gửi sự kiện tới người gửi
     io.to(users[senderId]).emit("message", data);
+    console.log(users[senderId]);
     // Gửi sự kiện tới người nhận
     io.to(users[receiverId]).emit("message", data);
+    console.log(users[receiverId]);
   });
 });
 

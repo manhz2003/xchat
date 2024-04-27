@@ -290,10 +290,10 @@ const getAllUsersWithLatestMessage = async (currentUserId) => {
     }
 
     const [users] = await connect.execute(
-      `SELECT Users.id, Users.fullname, Users.avatar, Users.status, Messages.content AS latestMessage
+      `SELECT Users.id, Users.fullname, Users.avatar, Users.status, Messages.content AS latestMessage, Messages.id AS latestMessageId
       FROM Users
       LEFT JOIN (
-        SELECT content, 
+        SELECT content, id,
           CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS user_id
         FROM Messages
         WHERE id IN (
@@ -303,7 +303,8 @@ const getAllUsersWithLatestMessage = async (currentUserId) => {
           GROUP BY CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END
         )
       ) Messages ON Users.id = Messages.user_id
-      WHERE Users.id != ?`,
+      WHERE Users.id != ?
+      ORDER BY Messages.id DESC`,
       [
         currentUserId,
         currentUserId,

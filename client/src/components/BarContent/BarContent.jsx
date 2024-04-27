@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import icons from "../../ultils/icons";
 const { IoIosSearch } = icons;
+import CryptoJS from "crypto-js";
 
 import { getAllUsersWithLatestMessage } from "../../apis/user";
 
@@ -12,9 +13,29 @@ const BarContent = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       const userId = localStorage.getItem("userId");
+      const secretKey1 = import.meta.env.VITE_ENCRYPTION_KEY_PRO;
+      const secretKey2 = import.meta.env.VITE_ENCRYPTION_KEY;
       const response = await getAllUsersWithLatestMessage(userId);
-      if (response.status !== 200) {
-        setUsers(response.data);
+      if (response.status === "success") {
+        const decryptedUsers = response.data.map((user) => {
+          let originalMessage = user.latestMessage;
+          if (user.latestMessage && user.latestMessage !== "null") {
+            try {
+              let decrypted = CryptoJS.DES.decrypt(
+                user.latestMessage,
+                secretKey1
+              );
+              originalMessage = decrypted.toString(CryptoJS.enc.Utf8);
+
+              decrypted = CryptoJS.DES.decrypt(originalMessage, secretKey2);
+              originalMessage = decrypted.toString(CryptoJS.enc.Utf8);
+            } catch (error) {
+              console.error("Error decrypting message:", error);
+            }
+          }
+          return { ...user, latestMessage: originalMessage };
+        });
+        setUsers(decryptedUsers);
       } else if (response.status === 500) {
         console.log("lỗi server");
       }

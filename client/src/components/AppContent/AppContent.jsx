@@ -38,7 +38,6 @@ const AppContent = () => {
   const [messages, setMessages] = useState([]);
   const [userIdDetail, setUserIdDetail] = useLocalStorage("userIdDetail", "");
   const [statusConnect, setStatusConnect] = useState(true);
-  const [newMessage, setNewMessage] = useState(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
