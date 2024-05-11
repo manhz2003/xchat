@@ -111,7 +111,6 @@ const getUserAvatar = async (req, res) => {
   try {
     const userId = req.params.id;
     const result = await UserService.getUserAvatar(userId);
-
     return res.status(result.status).json(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });

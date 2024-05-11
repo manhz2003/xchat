@@ -2,19 +2,28 @@ const connection = require("../config/database");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-function generateAccessToken(payload) {
+const generateAccessToken = (payload) => {
   const secretKey = process.env.ACCESS_TOKEN_SECRET || "secret";
-  const token = jwt.sign(payload, secretKey, { expiresIn: "1h" });
-  return token;
-}
+  const options = { expiresIn: "1h" };
+
+  try {
+    const token = jwt.sign(payload, secretKey, options);
+    return token;
+  } catch (err) {
+    throw new Error("Error generating access token");
+  }
+};
 
 const generateRefreshToken = (data) => {
-  const secretKey =
-    process.env.REFRESH_TOKEN_SECRET || "your-refresh-token-secret";
-  const refresh_token = jwt.sign(data, secretKey, {
-    expiresIn: "365d",
-  });
-  return refresh_token;
+  const secretKey = process.env.REFRESH_TOKEN_SECRET || "your-refresh-token-secret";
+  const options = { expiresIn: "365d" };
+
+  try {
+    const refreshToken = jwt.sign(data, secretKey, options);
+    return refreshToken;
+  } catch (err) {
+    throw new Error("Error generating refresh token");
+  }
 };
 
 const registerUser = async ({ fullname, email, password }) => {
@@ -25,8 +34,10 @@ const registerUser = async ({ fullname, email, password }) => {
       throw new Error("Connection is undefined or null.");
     }
     await connect.beginTransaction();
+    
     const salt = +process.env.SALT;
     const hashPassword = bcrypt.hashSync(password, salt);
+    
     const [users] = await connect.execute(
       "SELECT * FROM Users WHERE email = ?",
       [email]
@@ -46,6 +57,7 @@ const registerUser = async ({ fullname, email, password }) => {
 
     const userId = userInsertResult.insertId;
     const defaultRoleId = 2;
+    
     await connect.execute(
       "INSERT INTO UserRoles (user_id, role_id) VALUES (?, ?)",
       [userId, defaultRoleId]
@@ -74,6 +86,7 @@ const loginUser = async ({ email, password }) => {
     if (!connect) {
       throw new Error("Connection is undefined or null.");
     }
+    
     const [users] = await connect.execute(
       "SELECT * FROM Users WHERE email = ?",
       [email]
@@ -100,8 +113,10 @@ const loginUser = async ({ email, password }) => {
       1,
       user.id,
     ]);
-    const accessToken = generateAccessToken({ userId: user.id, email });
-    const refreshToken = generateRefreshToken({ userId: user.id, email });
+
+    const payload = { userId: user.id, email };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     return {
       status: 200,
@@ -112,11 +127,11 @@ const loginUser = async ({ email, password }) => {
       userId: user.id,
     };
   } catch (err) {
+    throw err;
+  } finally {
     if (connect) {
       connect.release();
     }
-
-    throw err;
   }
 };
 
@@ -128,9 +143,8 @@ const logoutUser = async ({ userId }) => {
       throw new Error("Connection is undefined or null.");
     }
 
-    // Update user status to 0
     await connect.execute("UPDATE Users SET status = ? WHERE id = ?", [
-      false,
+      0,
       userId,
     ]);
 
@@ -139,11 +153,11 @@ const logoutUser = async ({ userId }) => {
       message: "Đăng xuất thành công",
     };
   } catch (err) {
+    throw err;
+  } finally {
     if (connect) {
       connect.release();
     }
-
-    throw err;
   }
 };
 
@@ -154,6 +168,7 @@ const changePassword = async ({ email, oldPassword, newPassword }) => {
     if (!connect) {
       throw new Error("Connection is undefined or null.");
     }
+
     const [users] = await connect.execute(
       "SELECT * FROM Users WHERE email = ?",
       [email]
@@ -188,11 +203,11 @@ const changePassword = async ({ email, oldPassword, newPassword }) => {
       message: "Đổi mật khẩu thành công",
     };
   } catch (err) {
+    throw err;
+  } finally {
     if (connect) {
       connect.release();
     }
-
-    throw err;
   }
 };
 

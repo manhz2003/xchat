@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const initRoutes = require("./routes/index");
-const { authenticateToken, authorizeRole } = require("./middleware/auth");
 const bodyParser = require("body-parser");
 const http = require("http");
 const { Server } = require("socket.io");
